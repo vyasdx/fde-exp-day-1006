@@ -78,15 +78,14 @@ Wait for `Succeeded`.
 
 Real numbers from this deployment, pulled from Langfuse on 19 Sep. **One line each on what "normal" means**, so the next person can tell a problem from a Tuesday.
 
-| Metric | Value | What normal looks like |
+| Metric | Value | What "normal" means — and when to act |
 |---|---|---|
-| Eval scores | **M2 = 1, M3 = 1** | Both must be 1 on every run. A single 0 means the deploy is live but wrong — read the per-scenario lines, not just the top-level score. |
-| Traces | **172** | Grows by ~8 per deploy (M2, six M3 scenarios, HITL, cross-customer) plus one per real chat. A deploy that adds no traces did not reach the app. |
-| Latency | **avg 3.05s, median 2.78s, p95 5.75s, max 21.9s** | Under ~6s is ordinary. The 21.9s outlier was a cold start after an image-pull failure. Sustained p95 above 10s means the gateway or the model is degraded, not this app. |
-| Cost per task | **~$0.006** (46 traces priced) | Half a cent per question. A jump means the prompt grew or a retry loop started. |
-| Tokens per call | **in ~3,686, out ~142** | Input is ~25x output, because the hardened system prompt ships on every call. If input climbs without a prompt change, something is accumulating context. |
-| Routing errors | **0** | Any non-zero here is the gateway, not this app. `BLOCKED_BY_PROVIDER` in a reply is a content-filter block and is expected on adversarial input. |
-| HITL pauses | **1 per M3 run**, plus any real over-threshold transfer | Zero pauses across a run means the threshold is not being enforced — check both files listed under "Changing the rules". |
+| **Eval scores** | M2 = 1, M3 = 1 | Both 1, every run. Any 0 means live but wrong — read the per-scenario lines, not the top-level score. A single-scenario 0 that clears on redeploy is model variance; the same scenario failing twice is a real regression. |
+| **Avg latency** | 3.05s (median 2.78s, p95 5.75s) | Under 6s is ordinary. p95 above 10s sustained is the gateway or the model, not this app. A one-off above 20s is a cold start — check for a recent revision change before investigating anything else. |
+| **Cost / task** | ~$0.006 | Under $0.02 is normal. Above $0.05 means the prompt grew or a retry started. **Above $0.15 the agent is almost certainly looping** — nothing caps this, so check spend before assuming the app is merely slow. |
+| **Tokens / call** | in ~3,686, out ~142 | Input is ~25x output because the hardened prompt ships every call. Input above ~5,000 without a prompt edit means context is accumulating. Output above ~500 means the agent is explaining instead of answering — which is how the S6 regression happened. |
+| **Routing errors** | 0 | Must stay 0. Any non-zero is the gateway, not this app. `BLOCKED_BY_PROVIDER` inside a reply is different — that is the content filter working, and it is expected on adversarial input. |
+| **HITL pauses** | 1 per M3 run | Exactly one per run, plus one per real over-threshold transfer. **Zero pauses across a run means the threshold is not being enforced** — check both files under "Changing the rules", because the eval alone cannot detect this. A sudden rise means the threshold dropped or someone is probing. |
 
 **Caveat on cost and tokens.** Token counts were hardcoded to zero until 09:41 on 19 Sep. Traces older than that report a model and no usage, so any average over the full history understates cost. The figures above use instrumented calls only.
 
