@@ -1,0 +1,127 @@
+<svg viewBox="0 0 1040 700" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI, Arial, sans-serif">
+  <rect width="1040" height="700" fill="#ffffff"/>
+
+  <text x="520" y="28" text-anchor="middle" font-size="18.5" font-weight="bold" fill="#111111">Integration Topology — M1 · data flow and masking boundary (as built)</text>
+  <text x="520" y="46" text-anchor="middle" font-size="11" fill="#666666">FDE-1006 Vedavyas Vayalpadu · every claim cites a file and line in src/BankingApp</text>
+
+  <!-- ONE CONTAINER -->
+  <rect x="26" y="64" width="470" height="356" rx="10" fill="#f6f9f7" stroke="#1e7e34" stroke-width="2"/>
+  <text x="40" y="84" font-size="11.5" font-weight="bold" fill="#1e7e34">ONE CONTAINER — Azure Container Apps</text>
+  <text x="40" y="99" font-size="9" fill="#6b7280">public ingress · no internal network · everything below is in-process</text>
+
+  <!-- Legacy DB -->
+  <rect x="44" y="112" width="180" height="70" rx="7" fill="#e8f0fe" stroke="#4a86e8" stroke-width="2"/>
+  <text x="134" y="133" text-anchor="middle" font-size="12.5" font-weight="bold" fill="#111111">Legacy DB</text>
+  <text x="134" y="149" text-anchor="middle" font-size="9" fill="#444444">SQLite file, same container</text>
+  <text x="134" y="163" text-anchor="middle" font-size="9" fill="#444444">2 customers · 3 accts · 8 txns</text>
+  <text x="134" y="176" text-anchor="middle" font-size="8.5" fill="#b03a2e">db/*.sql is stale — verified here</text>
+
+  <path d="M224 147 L262 147" stroke="#555" stroke-width="2" marker-end="url(#ah)"/>
+
+  <!-- MCP Server -->
+  <rect x="262" y="112" width="180" height="70" rx="7" fill="#e6f4ea" stroke="#34a853" stroke-width="2"/>
+  <text x="352" y="133" text-anchor="middle" font-size="12.5" font-weight="bold" fill="#111111">MCP Server</text>
+  <text x="352" y="149" text-anchor="middle" font-size="9" fill="#444444">in-process, no network hop</text>
+  <text x="352" y="163" text-anchor="middle" font-size="8.5" fill="#666666">McpToolCatalog.cs · 5 tools</text>
+  <text x="352" y="176" text-anchor="middle" font-size="8.5" fill="#1e7e34">read-only + 1 simulated write</text>
+
+  <path d="M352 182 L352 206" stroke="#555" stroke-width="2" marker-end="url(#ah)"/>
+
+  <!-- AccountTools -->
+  <rect x="180" y="206" width="262" height="92" rx="7" fill="#eaf6ee" stroke="#1e7e34" stroke-width="2.5"/>
+  <text x="311" y="226" text-anchor="middle" font-size="13" font-weight="bold" fill="#111111">AccountTools</text>
+  <text x="192" y="246" font-size="9.5" fill="#1e7e34">✓ SCOPE CHECKED — which rows are fetched</text>
+  <text x="200" y="259" font-size="8.5" font-family="Consolas, monospace" fill="#444444">110 return Denied(...) — before _db.Create()</text>
+  <text x="200" y="271" font-size="8.5" font-family="Consolas, monospace" fill="#444444">149 WHERE a.id IN (allowed)</text>
+  <text x="192" y="289" font-size="9.5" font-weight="bold" fill="#b03a2e">! MUST REDACT HERE — which fields leave</text>
+
+  <!-- MASKING BOUNDARY -->
+  <line x1="150" y1="316" x2="472" y2="316" stroke="#c0392b" stroke-width="3" stroke-dasharray="9 5"/>
+  <circle cx="472" cy="316" r="7" fill="#c0392b"/>
+  <text x="469" y="320" font-size="10" font-weight="bold" fill="#ffffff">!</text>
+  <text x="156" y="311" font-size="10" font-weight="bold" fill="#c0392b">THE MASKING BOUNDARY — all sensitive data redacted before it reaches the agent</text>
+
+  <path d="M311 318 L311 340" stroke="#c0392b" stroke-width="2" marker-end="url(#ahr)"/>
+
+  <!-- MAF Agent -->
+  <rect x="180" y="340" width="262" height="62" rx="7" fill="#fff4e5" stroke="#e8912d" stroke-width="2"/>
+  <text x="311" y="360" text-anchor="middle" font-size="12.5" font-weight="bold" fill="#111111">MAF Agent</text>
+  <text x="311" y="375" text-anchor="middle" font-size="9" fill="#444444">McpAgentRuntime · SystemPrompt.md</text>
+  <text x="311" y="389" text-anchor="middle" font-size="8.5" fill="#8a5a00">probabilistic layer · sees only what crossed the line</text>
+
+  <path d="M311 420 L311 446" stroke="#1e7e34" stroke-width="2.5" marker-end="url(#ahg)"/>
+  <text x="322" y="438" font-size="9.5" font-weight="bold" fill="#1e7e34">Only masked data leaves</text>
+
+  <!-- agentgateway -->
+  <rect x="150" y="446" width="322" height="56" rx="7" fill="#f2f3f5" stroke="#6b7280" stroke-width="2"/>
+  <text x="311" y="466" text-anchor="middle" font-size="12" font-weight="bold" fill="#111111">agentgateway.dev</text>
+  <text x="311" y="481" text-anchor="middle" font-size="9" fill="#444444">external, public reachability · per-participant /FDE-ID/mcp route</text>
+  <text x="311" y="494" text-anchor="middle" font-size="8.5" fill="#b03a2e">route registered by organizers — CD step fails exit 22 until then</text>
+
+  <path d="M311 502 L311 524" stroke="#555" stroke-width="2" marker-end="url(#ah)"/>
+
+  <!-- Foundry -->
+  <rect x="150" y="524" width="322" height="50" rx="7" fill="#eef2fb" stroke="#4a86e8" stroke-width="2"/>
+  <text x="311" y="544" text-anchor="middle" font-size="12" font-weight="bold" fill="#111111">Foundry</text>
+  <text x="311" y="560" text-anchor="middle" font-size="9" fill="#444444">inference in cloud · outside the trust boundary</text>
+
+  <!-- ===== RIGHT COLUMN ===== -->
+
+  <!-- what crosses -->
+  <rect x="512" y="64" width="504" height="176" rx="8" fill="#ffffff" stroke="#c0392b" stroke-width="1.5"/>
+  <text x="526" y="84" font-size="11" font-weight="bold" fill="#c0392b">WHAT MAY CROSS THE BOUNDARY</text>
+  <text x="526" y="104" font-size="9.5" fill="#1e7e34">✓ balance of an in-scope account, exact — M2 grades $4523.10; rule 2 forbids rounding</text>
+  <text x="526" y="121" font-size="9.5" fill="#1e7e34">✓ customer name of the authenticated session</text>
+  <text x="526" y="138" font-size="9.5" fill="#1e7e34">✓ transaction descriptions for in-scope accounts — residual: free text, unconstrained</text>
+  <text x="526" y="158" font-size="9.5" fill="#b03a2e">✗ any other customer's row — never queried, so nothing to redact downstream</text>
+  <text x="526" y="175" font-size="9.5" fill="#b03a2e">✗ schema or raw table contents — no tool exposes them</text>
+  <text x="526" y="192" font-size="9.5" fill="#b03a2e">✗ full account_number — REDACT to last 4; get_balance emits #101 today</text>
+  <text x="526" y="212" font-size="9" fill="#555555">normalize_phone is a pure function. Routing it through the model spends a model call and</text>
+  <text x="526" y="224" font-size="9" fill="#555555">puts caller-supplied PII in a third party's context, for a regex. No-model tier.</text>
+
+  <!-- boundary is not -->
+  <rect x="512" y="252" width="504" height="70" rx="8" fill="#fbfbfb" stroke="#b03a2e" stroke-width="1.2" stroke-dasharray="4 3"/>
+  <text x="526" y="271" font-size="10.5" font-weight="bold" fill="#b03a2e">THE BOUNDARY IS NOT A NETWORK HOP</text>
+  <text x="526" y="288" font-size="9" fill="#555555">The DB is a file in this container and the MCP server is in-process — there is no internal</text>
+  <text x="526" y="301" font-size="9" fill="#555555">network to draw a line across. Drawing it at the agent→gateway hop implies redaction in</text>
+  <text x="526" y="314" font-size="9" fill="#555555">flight, which does not exist. It is a code boundary at AccountTools' return.</text>
+
+  <!-- SCOPE -->
+  <rect x="512" y="334" width="504" height="240" rx="8" fill="#fafbfc" stroke="#9aa5b1" stroke-width="1.5"/>
+  <text x="526" y="353" font-size="10.5" font-weight="bold" fill="#5a6672">SCOPE DECISION — four tickets, one excluded</text>
+
+  <rect x="524" y="363" width="156" height="54" rx="5" fill="#e6f4ea" stroke="#34a853" stroke-width="1.5"/>
+  <text x="533" y="379" font-size="9.5" font-weight="bold" fill="#111111">A · Contact Center</text>
+  <text x="533" y="393" font-size="8.5" fill="#444444">10 min/call, manual lookup</text>
+  <text x="533" y="408" font-size="8.5" font-weight="bold" fill="#1e7e34">IN today — Stage 2</text>
+
+  <rect x="690" y="363" width="156" height="54" rx="5" fill="#e6f4ea" stroke="#34a853" stroke-width="1.5"/>
+  <text x="699" y="379" font-size="9.5" font-weight="bold" fill="#111111">B · Fraud &amp; Security</text>
+  <text x="699" y="393" font-size="8.5" fill="#444444">1 in 5 SMS alerts fail</text>
+  <text x="699" y="408" font-size="8.5" font-weight="bold" fill="#1e7e34">IN today — Stage 2</text>
+
+  <rect x="856" y="363" width="148" height="54" rx="5" fill="#fff4e5" stroke="#e8912d" stroke-width="1.5"/>
+  <text x="865" y="379" font-size="9.5" font-weight="bold" fill="#111111">C · Risk &amp; Compliance</text>
+  <text x="865" y="393" font-size="8.5" fill="#444444">paper approvals, 2–3 days</text>
+  <text x="865" y="408" font-size="8.5" font-weight="bold" fill="#8a5a00">IN today — Stage 3</text>
+
+  <rect x="524" y="425" width="480" height="66" rx="5" fill="#fdeaea" stroke="#c0392b" stroke-width="2"/>
+  <text x="533" y="442" font-size="9.5" font-weight="bold" fill="#c0392b">D · Retail Banking, Product — "could we also open CDs and loans?" — OUT OF SCOPE</text>
+  <text x="533" y="457" font-size="8.5" fill="#333333">Product origination, owned by Retail Banking Product, not account servicing. Carries KYC and suitability</text>
+  <text x="533" y="470" font-size="8.5" fill="#333333">obligations this engagement does not hold. No write path exists in the five deployed tools. Servicing an</text>
+  <text x="533" y="483" font-size="8.5" fill="#333333">existing product is in scope; opening a new one is not. Client filed it Medium against High for A, B, C.</text>
+
+  <text x="526" y="510" font-size="10" font-weight="bold" fill="#5a6672">NAMED LIMITATIONS</text>
+  <text x="526" y="526" font-size="8.5" fill="#333333">1. db/init.sql + db/seed.sql contradict the baked DB — 10 customers vs 2, $12,000 vs $1,250. Stale provenance.</text>
+  <text x="526" y="540" font-size="8.5" fill="#333333">2. No phone column exists, so Ticket B's fix is the normalizer function alone. No batch job to write.</text>
+  <text x="526" y="554" font-size="8.5" fill="#333333">3. No audit or approval table — Ticket C's "searchable audit trail" has nowhere to persist.</text>
+  <text x="526" y="568" font-size="8.5" fill="#333333">4. M3 S4 asks for in-scope data under a jailbreak frame — the scope check never fires. No harness covers it.</text>
+
+  <text x="26" y="592" font-size="9" fill="#6b7280">Observe. Measure. Improve. Ship with confidence.</text>
+
+  <defs>
+    <marker id="ah" markerWidth="9" markerHeight="9" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="#555"/></marker>
+    <marker id="ahr" markerWidth="9" markerHeight="9" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="#c0392b"/></marker>
+    <marker id="ahg" markerWidth="9" markerHeight="9" refX="8" refY="3" orient="auto"><path d="M0,0 L0,6 L9,3 z" fill="#1e7e34"/></marker>
+  </defs>
+</svg>

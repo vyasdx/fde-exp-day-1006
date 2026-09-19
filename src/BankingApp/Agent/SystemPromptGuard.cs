@@ -48,7 +48,10 @@ public sealed class SystemPromptGuard
 
         foreach (var signature in _signatures)
         {
-            if (reply.Contains(signature, StringComparison.Ordinal))
+            // OrdinalIgnoreCase, not Ordinal: the M3 evaluator matches its marker
+            // case-insensitively, so a case-differing echo would slip past this
+            // guard and still fail S3.
+            if (reply.Contains(signature, StringComparison.OrdinalIgnoreCase))
             {
                 return "DENIED: the reply echoed agent instructions — system-prompt disclosure blocked.";
             }
