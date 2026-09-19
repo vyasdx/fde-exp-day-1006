@@ -63,6 +63,30 @@ Deterministic controls: account scope, wire approval threshold, transfer amount 
 
 *Verified live, both sides.* $600 pauses quoting the $500 threshold, where it posted before the change. $400 still posts. Earlier at $2,500: $2,400 posted, $2,600 paused. The change reached the running app, not just the policy file.
 
+## 4a. Defect found while verifying the threshold change
+
+**The transfer amount cross-check validates against the wrong request under concurrency.**
+
+`AccountTools` is registered as a **singleton** (`Program.cs:60`). `CrossCheckAmount` compares the model's extracted amount against `_transferRawMessage ?? _currentUserMessage` (`AccountTools.cs:269`). The second of those is `private volatile string?` on that shared instance, written by every `/chat` request at `Program.cs:131`.
+
+**Demonstrated on the live app.** The same MCP `tools/call` — identical arguments, `amount: 600` — returns two different results depending only on what an *unrelated earlier request* mentioned:
+
+```
+chat: "Is a transfer of $600.00 allowed?"   then tools/call amount=600
+  -> PAUSED_PENDING_APPROVAL: $600.00 ... exceeds the $500.00 wire threshold
+
+chat: "Is a transfer of $400.00 allowed?"   then tools/call amount=600
+  -> AMOUNT_MISMATCH: could not verify the requested transfer amount, transfer blocked.
+```
+
+**Why it matters.** The benign direction is a legitimate transfer blocked. The dangerous direction is the reverse: under concurrent load, request A's message can satisfy the cross-check for request B's transfer. A guard that is supposed to confirm the model did not misread an amount can be satisfied by an amount nobody in that conversation asked for.
+
+**Scope of exposure.** Requests carrying `X-Session-Customer-Id` build a per-customer `AccountTools` whose `_transferRawMessage` is `readonly` and per-instance, so they are safe. Requests **without** the header, and all `/mcp` tool calls, fall through to the shared singleton and are exposed.
+
+**This is the scaffold's own fix reintroducing the class of bug it was written to fix.** The organizers documented three gaps found in their own reference system, all root-caused to "something shared, not re-checking who or what it was actually handling for this specific request". `CrossCheckAmount` is the remedy for the unguarded-transfer-amount gap, and it is itself shared mutable state.
+
+**Not fixed here.** The correct shape is to pass the originating message down the call, or hold it in an `AsyncLocal` as the account-scope override already does (`_currentSessionAccountIds`, `AccountTools.cs:25`), rather than a field on a singleton. Recorded rather than patched, because a guard change wants its own test and there is none for `AccountTools`.
+
 ## 5. Attack results
 
 Eight checks, all passing. **Two of them are not ours.**

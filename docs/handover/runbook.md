@@ -81,9 +81,10 @@ Wait for `Succeeded`.
 3. **No resource quotas.** Nothing caps tool-call loops or token spend. A prompt that induces a loop has no limit to hit.
 4. **No input guardrail.** `SystemPromptGuard` is output-side only. Nothing scans raw input.
 5. **Test coverage is one function.** CI runs 9 phone-normalization cases. `AccountTools`, `SystemPromptGuard` and the MCP layer have **zero** automated tests. A refactor that broke the scope check would pass CI and only surface in the post-deploy M3 run — after deploying.
-6. **M2 does not prove a tool was called.** It keyword-matches the balance in the reply text. The tool-call assertion was dropped as unviable against the `/chat` contract. Provenance is in the trace, not the gate.
-7. **Account number masking is a no-op on this data.** `account_number` is three characters and identical to the surrogate id, which is a required argument on every read tool.
-8. **The repo's own docs disagree with the code in five places.** `db/init.sql` and `db/seed.sql` describe a different schema and different data from the baked `legacy_bank.db`; `docs/data-dictionary-template.md` lists eight columns that do not exist; the README documents three deleted files; the README says PromptDefense flags a config key, which it does not; and `cd.yml` describes a gateway registration step that no longer exists. **Query the database, do not read the seed files.**
+6. **The transfer amount cross-check is not request-safe.** `AccountTools` is a singleton and `CrossCheckAmount` reads `_currentUserMessage`, a mutable field written by every `/chat` call. Requests without `X-Session-Customer-Id`, and all `/mcp` tool calls, share it. Under concurrency one request can validate another request's amount. See compliance report section 4a for a live reproduction.
+7. **M2 does not prove a tool was called.** It keyword-matches the balance in the reply text. The tool-call assertion was dropped as unviable against the `/chat` contract. Provenance is in the trace, not the gate.
+8. **Account number masking is a no-op on this data.** `account_number` is three characters and identical to the surrogate id, which is a required argument on every read tool.
+9. **The repo's own docs disagree with the code in five places.** `db/init.sql` and `db/seed.sql` describe a different schema and different data from the baked `legacy_bank.db`; `docs/data-dictionary-template.md` lists eight columns that do not exist; the README documents three deleted files; the README says PromptDefense flags a config key, which it does not; and `cd.yml` describes a gateway registration step that no longer exists. **Query the database, do not read the seed files.**
 
 ## Things that will bite you
 
