@@ -71,4 +71,4 @@ rules:
       condition: "input.amount > policy.wire_transfer_threshold"
 
 settings:
-  wire_transfer_threshold: 1000.00
+  wire_transfer_threshold: 2500.00
