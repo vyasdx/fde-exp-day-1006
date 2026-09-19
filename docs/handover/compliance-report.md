@@ -40,7 +40,16 @@ It has two halves, both in `AccountTools`:
 | Phone normalisation | **no model** — pure function | correct tier, but exposed as a conversational tool |
 | Validation, scope, threshold | **no model** — plain code | correct tier |
 
-Token accounting was hardcoded to zero and is now read from the run response. Measured on a live trace: **3,624 input, 58 output, 3,682 total** for one balance question. The prompt is roughly sixty times the answer, a direct cost of the hardening in section 4. **No budget or quota exists.**
+Token accounting was hardcoded to zero and is now read from the run response.
+
+| Measured over instrumented calls | |
+|---|---|
+| Input tokens, average | ~3,686 |
+| Output tokens, average | ~142 |
+| Cost per task | ~$0.006 |
+| Latency | avg 3.05s, median 2.78s, p95 5.75s |
+
+Input runs roughly 25x output because the hardened system prompt ships on every call — a direct, now-measurable cost of the guardrails in section 4. **No budget or quota exists**, so nothing caps spend if a loop starts. Traces predating 09:41 report a model and no usage, so any average across the full history understates cost.
 
 ## 4. Guardrails
 

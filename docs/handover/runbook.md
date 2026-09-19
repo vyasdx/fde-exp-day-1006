@@ -74,6 +74,62 @@ Wait for `Succeeded`.
 | Account number masking | `AccountTools.MaskAccountNumber` | yes |
 | Everything else | `SystemPrompt.md` | **no — model-dependent** |
 
+## What the telemetry shows
+
+Real numbers from this deployment, pulled from Langfuse on 19 Sep. **One line each on what "normal" means**, so the next person can tell a problem from a Tuesday.
+
+| Metric | Value | What normal looks like |
+|---|---|---|
+| Eval scores | **M2 = 1, M3 = 1** | Both must be 1 on every run. A single 0 means the deploy is live but wrong — read the per-scenario lines, not just the top-level score. |
+| Traces | **172** | Grows by ~8 per deploy (M2, six M3 scenarios, HITL, cross-customer) plus one per real chat. A deploy that adds no traces did not reach the app. |
+| Latency | **avg 3.05s, median 2.78s, p95 5.75s, max 21.9s** | Under ~6s is ordinary. The 21.9s outlier was a cold start after an image-pull failure. Sustained p95 above 10s means the gateway or the model is degraded, not this app. |
+| Cost per task | **~$0.006** (46 traces priced) | Half a cent per question. A jump means the prompt grew or a retry loop started. |
+| Tokens per call | **in ~3,686, out ~142** | Input is ~25x output, because the hardened system prompt ships on every call. If input climbs without a prompt change, something is accumulating context. |
+| Routing errors | **0** | Any non-zero here is the gateway, not this app. `BLOCKED_BY_PROVIDER` in a reply is a content-filter block and is expected on adversarial input. |
+| HITL pauses | **1 per M3 run**, plus any real over-threshold transfer | Zero pauses across a run means the threshold is not being enforced — check both files listed under "Changing the rules". |
+
+**Caveat on cost and tokens.** Token counts were hardcoded to zero until 09:41 on 19 Sep. Traces older than that report a model and no usage, so any average over the full history understates cost. The figures above use instrumented calls only.
+
+## Known failure modes
+
+Three kinds, each with what it looks like and where to start.
+
+### Eval-step failures
+
+The deploy is green and a milestone scores 0. The app is live but wrong.
+
+| Symptom | Cause seen | Fix |
+|---|---|---|
+| M2 = 0, reply has `$4,523.10` | a prompt change diluted the exact-figure rule | rule 2 in `SystemPrompt.md` forbids thousands separators |
+| M2 = 0, reply asks for an account id | the agent did not call `list_accounts` first | rule 5, "look before you ask" |
+| M3 = 0, S6 only, "contains POSTED" | the agent paraphrased a paused transfer as "has not posted"; the S6 check is a substring match with **no negation handling**, unlike the HITL check | rule 4 — quote the tool outcome and add no restatement |
+
+**The pattern behind all three: hardening one dimension moved an unrelated one.** Always re-run the whole pipeline after a prompt change, never just the thing you were fixing.
+
+### Deploy failures
+
+| Symptom | Cause | Fix |
+|---|---|---|
+| Step "Configure Container App to pull from GHCR" fails with `ContainerAppOperationInProgress` | two deploys racing | push **or** dispatch, never both. Six red runs on 19 Sep were only this. |
+| Browser shows "stream timeout", `/health` hangs, revision `Unhealthy` | `ImagePullBackOff` — the registry credential is the job-scoped `GITHUB_TOKEN`, which dies with the workflow, and Container Apps re-pulls on every container start | re-deploy restores service; the durable fix is a persistent token with `read:packages` or a public package |
+| Revision `ActivationFailed`, or the ACA welcome page | ingress target port mismatch (quickstart apps default to 80, this image listens on 8080) | the pipeline corrects it; if it recurs, check the ingress step |
+
+### The policy-change propagation chain
+
+A rule change has to reach **three** places, and only the last one is proof.
+
+```
+policy.yaml  ->  what the eval grades
+container-app.tmpl.yaml  ->  what the app enforces
+the running revision  ->  what a customer experiences
+```
+
+Failure modes along it:
+
+1. **Edit only `policy.yaml`.** The eval grades the new figure, the app enforces the old one. **The pipeline goes green while the two disagree**, because the HITL check tests at threshold+1 and any value at or above the app's figure still pauses.
+2. **Put a digit in a comment above the setting.** The eval scrapes the first line mentioning threshold, transfer or wire that contains a digit. It read a comment for most of 19 Sep. Proven: setting 7777.00 while the eval resolved 1000.00.
+3. **Trust the eval as proof.** It cannot distinguish a $500 app from a $2,500 app. Only a live transfer between the two figures can. Use `scripts/set-threshold.sh`, then test both sides by hand.
+
 ## Known limitations — read these before trusting a green pipeline
 
 1. **Two of eight M3 checks are not ours.** S2 and S4 return `BLOCKED_BY_PROVIDER`: the upstream gateway's content filter stops them before the agent sees them. Change the filter or the phrasing and there is nothing of ours behind them. **A green M3 overstates how governed this system is.**
