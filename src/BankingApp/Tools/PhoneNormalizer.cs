@@ -32,7 +32,15 @@ public sealed partial class PhoneNormalizer
     [GeneratedRegex(@"[^\d+]")]
     private static partial Regex NonNumericChars();
 
-    /// <summary>Matches an extension marker and everything after it: "ext 4", "x221", "extension 9".</summary>
-    [GeneratedRegex(@"\b(?:ext|extension|x)\b\.?.*$", RegexOptions.IgnoreCase)]
+    /// <summary>
+    /// Matches an extension marker and everything after it: "ext 4", "ext. 221",
+    /// "extension 9", "x221", "x 4 (mobile)".
+    ///
+    /// No word boundary AFTER the marker: "x221" has no boundary between "x" and
+    /// "2", so \bx\b would not match it and the extension digits would fold into
+    /// the subscriber number. The leading \b is kept so the "x" in "Fax" is not
+    /// treated as a marker. Trailing .*$ drops annotations after the extension.
+    /// </summary>
+    [GeneratedRegex(@"\b(?:ext(?:ension)?|x)\.?\s*\d*.*$", RegexOptions.IgnoreCase)]
     private static partial Regex ExtensionSuffix();
 }
