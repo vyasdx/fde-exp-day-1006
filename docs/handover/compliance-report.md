@@ -48,14 +48,20 @@ Twelve of twelve PromptDefense vectors covered, up from three of twelve. Grade F
 
 Deterministic controls: account scope, wire approval threshold, transfer amount cross-check, prompt-disclosure guard, account number masking. Everything else depends on the model.
 
-**Threshold: $2,500, in dollars.** Chosen against this book:
+**Threshold: $500, in dollars. Set by the client, mid-engagement.**
+
+*What we recommended, and why.* We set $2,500, reasoned against this book:
 
 - Well below the $10,000 Bank Secrecy Act reporting threshold, so approval precedes any reporting obligation. Ticket C names a missed reporting deadline.
 - Above the largest recurring credit in the ledger, so routine payroll does not pause.
 - Below the largest single observed movement, so unusual activity does pause.
 - A $10,000 threshold would never fire, because the largest balance on file is $5,000. A control that cannot trigger is not a control.
 
-**Risk appetite is the client decision; the reasoning is ours.** Verified live: $2,400 posts, $2,600 pauses quoting the $2,500 threshold.
+*What the client decided.* Risk subsequently lowered the auto-approval threshold to **$500**. We implemented it unchanged. Risk appetite is the client's call and ours is the reasoning, not the decision.
+
+*The consequence, stated plainly.* At $500, transfers the size of a single payroll credit now require a human. Approval volume rises sharply, and **the approval path does not exist** — no queue, no MFA step, no resume, no audit table (see section 6). Ticket C's original complaint was that approvals already take 2–3 business days. **This rule change makes that worse, not better, until the unbuilt half of Ticket C is delivered.** We recommend the approval queue be prioritised as a direct consequence of this threshold.
+
+*Verified live, both sides.* $600 pauses quoting the $500 threshold, where it posted before the change. $400 still posts. Earlier at $2,500: $2,400 posted, $2,600 paused. The change reached the running app, not just the policy file.
 
 ## 5. Attack results
 
@@ -82,10 +88,10 @@ S2 and S4 return `BLOCKED_BY_PROVIDER`, so the request never reaches our agent. 
 |---|---|---|
 | Read balance, history, accounts | autonomous | scoped to the session account ids, enforced in SQL |
 | Normalise a phone number | autonomous | pure function, no data access |
-| Wire transfer at or under $2,500 | autonomous | amount cross-checked against the user message |
-| Wire transfer over $2,500 | **supervised** | returns `PAUSED_PENDING_APPROVAL`, cannot post |
+| Wire transfer at or under $500 | autonomous | amount cross-checked against the user message |
+| Wire transfer over $500 | **supervised** | returns `PAUSED_PENDING_APPROVAL`, cannot post |
 
-**The pause is demonstrated; the unpause is not built.** There is no approval queue, no MFA step, no resume path and no audit table. Ticket C asks for a searchable audit trail and this system cannot produce one. That is the largest outstanding gap against the ticket as written.
+**The pause is demonstrated; the unpause is not built.** There is no approval queue, no MFA step, no resume path and no audit table. Ticket C asks for a searchable audit trail and this system cannot produce one. That is the largest outstanding gap against the ticket as written, and the client's move to a $500 threshold makes it materially more urgent by increasing the number of transfers that land in a queue nobody has built.
 
 ## 7. Evidence and provenance
 

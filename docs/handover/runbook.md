@@ -54,7 +54,7 @@ Wait for `Succeeded`.
 
 ## Changing the rules
 
-**Wire approval threshold.** Currently **$2,500**, in dollars, not cents. It lives in **two files that must match**:
+**Wire approval threshold.** Currently **$500**, in dollars, not cents — lowered from $2,500 by the client mid-engagement. Change it with `./scripts/set-threshold.sh <dollars>`, which edits both files and verifies them. It lives in **two files that must match**:
 
 - `governance/policy.yaml` → `settings.wire_transfer_threshold` — what the eval grades
 - `.azure/container-app.tmpl.yaml` → `FDE_WIRE_TRANSFER_THRESHOLD` — what the app enforces
