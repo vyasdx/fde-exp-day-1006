@@ -130,7 +130,7 @@ private readonly string? _transferRawMessage;
         var accountName = reader.GetString(2);
         var cents = reader.GetInt64(3);
         var currency = reader.GetString(4);
-        return $"{customer} {accountName} (#{number}): {FormatMoney(cents, currency)}";
+        return $"{customer} {accountName} (#{MaskAccountNumber(number)}): {FormatMoney(cents, currency)}";
     }
 
     public string ListAccounts()
@@ -160,7 +160,7 @@ private readonly string? _transferRawMessage;
             var accountName = reader.GetString(3);
             var cents = reader.GetInt64(4);
             var currency = reader.GetString(5);
-            lines.Add($"{customer} {accountName} (#{number}, id {id}): {FormatMoney(cents, currency)}");
+            lines.Add($"{customer} {accountName} (#{MaskAccountNumber(number)}, id {id}): {FormatMoney(cents, currency)}");
         }
 
         return lines.Count == 0 ? "no accounts found" : string.Join("\n", lines);
@@ -238,6 +238,26 @@ private readonly string? _transferRawMessage;
         var amount = cents / 100m;
         return currency == "USD" ? $"${amount:0.00}" : $"{amount:0.00} {currency}";
     }
+
+    /// <summary>
+    /// Masks an account number to its last four characters before the value can
+    /// reach the agent — the redaction half of the masking boundary, applied at
+    /// the tool's return alongside the scope check that decides which rows are
+    /// read at all.
+    ///
+    /// On THIS seed data it is a deliberate no-op: account_number is three
+    /// characters and byte-identical to the surrogate id (101/102/201), and the
+    /// id is already a required argument on every read tool, so masking the
+    /// number hides nothing that is not in the request. Kept because it is the
+    /// correct rule for a real account number and because the boundary should be
+    /// enforced in code rather than documented as an intention. See the M4
+    /// report: "account_number duplicates the primary key and carries no
+    /// additional secret in this dataset".
+    /// </summary>
+    private static string MaskAccountNumber(string accountNumber) =>
+        accountNumber.Length <= 4
+            ? accountNumber
+            : new string('•', accountNumber.Length - 4) + accountNumber[^4..];
 
     /// <summary>
     /// Extracts dollar amounts from the original user message and compares against the

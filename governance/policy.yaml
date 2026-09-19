@@ -9,9 +9,17 @@
 #   get_balance, list_accounts, get_transaction_history,
 #   normalize_phone, submit_wire_transfer
 #
-# Threshold lockstep: the app pauses a wire when input.amount > FDE_WIRE_TRANSFER_THRESHOLD
-# (default 1000.00 in FdeOptions), and the M3 eval reads the threshold from the
+# Threshold lockstep: the app pauses a wire when input.amount exceeds
+# FDE_WIRE_TRANSFER_THRESHOLD, and the eval reads the same figure from
 # settings.wire_transfer_threshold below (env override: FDE_WIRE_TRANSFER_THRESHOLD).
+# Units are DOLLARS, not cents.
+#
+# WARNING - DO NOT PUT A DIGIT IN ANY COMMENT ABOVE THE SETTING BELOW.
+# The eval resolves the threshold by scanning this file top to bottom and taking
+# the first line that mentions threshold, transfer or wire AND contains a digit.
+# A number in prose here silently outranks the setting, so the app would enforce
+# one figure while the boundary test graded another. Verified on this repo: with a
+# digit in this comment block the eval ignored the setting entirely.
 # Keep the two equal, or the boundary test in the HITL pause check diverges from the
 # deployed agent's behavior.
 #
@@ -25,11 +33,35 @@ rules:
       condition: "input.account_id not in session.authenticated_account_ids"
 
   - id: block-customer-enumeration
-    description: "Bulk listing of every account on file is denied outside an authenticated banker session — S1/S3/S6 in the fixed adversarial suite probe exactly this."
+    description: "Bulk listing is limited to the accounts the authenticated session owns. There is no banker role in this deployment; enforcement is an account-id allowlist, and the listing query is scoped by it rather than filtered afterwards."
     effect: deny
+    enforced_by: "AccountTools.ListAccounts — WHERE a.id IN (EffectiveAccountIds)"
     when:
       tool: [list_accounts]
-      condition: "session.role != 'banker'"
+      condition: "account_id not in session.authenticated_account_ids"
+
+  - id: redact-account-number
+    description: "An account number is masked to its last four characters before any tool result reaches the agent. On this dataset it is a no-op: account_number is three characters and identical to the surrogate id, which is already a required tool argument, so it carries no additional secret. Recorded as an enforced rule because the boundary belongs in code, not in prose."
+    effect: redact
+    enforced_by: "AccountTools.MaskAccountNumber, applied at the return of GetBalance and ListAccounts"
+    when:
+      tool: [get_balance, list_accounts]
+      field: account_number
+
+  - id: state-scope-explicitly
+    description: "A scoped result must be described as scoped. The agent may not present the accounts it can see as the complete contents of the database. Observed on the baseline deploy: asked to list every customer, it answered that only one customer is on file when three accounts exist. No keyword check detects this."
+    effect: require
+    enforced_by: "SystemPrompt.md — Defense rules, data-leakage. NOT enforced deterministically; this rule is advisory and relies on the model."
+    when:
+      tool: [list_accounts, get_balance, get_transaction_history]
+      condition: "result is a subset of the underlying table"
+
+  - id: refuse-product-origination
+    description: "Opening new account types, including certificates of deposit and personal loans, is out of scope. Origination is owned by Retail Banking Product, carries KYC and suitability obligations this engagement does not hold, and no tool in the deployed surface writes to an origination system of record. Servicing an existing product remains in scope."
+    effect: deny
+    enforced_by: "Absence of any origination tool in McpToolCatalog. No code path exists to reach one."
+    when:
+      intent: [open_account, open_certificate_of_deposit, apply_for_loan]
 
   - id: wire-transfer-approval-threshold
     description: "Wire transfers above the threshold require human approval — the agent must show the PAUSED_PENDING_APPROVAL state and never report POSTED."
