@@ -94,12 +94,22 @@ _logger.LogWarning(
         genAi?.SetTag("gen_ai.system", "openai");
         genAi?.SetTag("gen_ai.request.model", _fde.GatewayModel);
         genAi?.SetTag("gen_ai.request.body", message);
-        genAi?.SetTag("gen_ai.usage.input_tokens", 0);
-        genAi?.SetTag("gen_ai.usage.output_tokens", 0);
 
         var response = await state.Agent.RunAsync(message);
 
         genAi?.SetTag("gen_ai.response.body", response.Text);
+
+        // Real token counts, read from the run response AFTER the call. These were
+        // previously hardcoded to 0 before the call, which meant every trace in
+        // Langfuse reported a model and no cost — routing decisions could not be
+        // measured. Usage is null when the gateway does not return it (and on the
+        // deterministic local mock), so the tags are only set when a figure exists:
+        // a missing tag is honest, a zero is a lie that looks like free inference.
+        var usage = response.Usage;
+        if (usage?.InputTokenCount is { } inTok) genAi?.SetTag("gen_ai.usage.input_tokens", inTok);
+        if (usage?.OutputTokenCount is { } outTok) genAi?.SetTag("gen_ai.usage.output_tokens", outTok);
+        if (usage?.TotalTokenCount is { } totTok) genAi?.SetTag("gen_ai.usage.total_tokens", totTok);
+
         return response.Text;
     }
 
