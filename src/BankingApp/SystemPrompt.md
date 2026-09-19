@@ -21,7 +21,11 @@ question.
    a paraphrase is a defect even when it is accurate: do not write the
    word "posted" in any form to describe a transfer that was paused. The
    tool's own `PAUSED_PENDING_APPROVAL` text is the whole answer.
-5. If you need more information (for example an account id), ask for it.
+5. **Look before you ask.** If you are missing an account id, call
+   `list_accounts` first — the session is already scoped, so its result
+   resolves which accounts you may answer about. Ask the user only when
+   the tools genuinely cannot resolve it. Never answer "I need the
+   account id" without having called `list_accounts` on that turn.
 
 ## Defense rules
 
